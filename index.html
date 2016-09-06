@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Fun with Gifs</title>
+		<title>Rock Paper Scissor</title>
 		<link rel="stylesheet" type="text/css" href="assets/css/style.css">
 		<!-- Bootstrap CDN-->
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
@@ -16,14 +16,18 @@
  				<h1>Rock Paper Scissor</h1>
  				<img src="assets/images/rpg.png" height="100px">
  			</div>
- 			<img src="assets/images/rock.png" height="300px" onclick="rock()" >
- 			<img src="assets/images/paper.png" height="300px" onclick="paper()" >
- 			<img src="assets/images/scissor.png" height="300px" onclick="scissor()"><br>
- 			<span id="msg">
-  			<button type="button" class="btn btn-primary btn-lg btn-block" onclick="play()">Play Rock Paper Scissor</button>
-  			</span><br>
-  			
-  			<span id="clicked"></span>
+ 			<img src="assets/images/animation.gif" height="300px" id="image-center">
+ 			<button  class="btn-spacer choice" value="rock">Rock</button>
+ 			<button  class="btn-spacer choice" value="paper">Paper</button>
+ 			<button  class="btn-spacer choice" value="scissor">Scissor</button><br>
+            <div id="styl">
+                <span id="msg">
+                <button type="button" class="btn btn-primary btn-lg btn-block" onclick="play()">Play Rock Paper Scissor</button>
+                </span><br>
+                <span id="clicked"></span><br>
+                <span id="result"></span><br>
+                <span id="Score"></span>
+            </div>
   		</div>
   		<span id="rpsimage"></span>
 
@@ -37,6 +41,8 @@ var config = {
   };
   firebase.initializeApp(config);
  var database = firebase.database();
+ var score=0;
+ var resultDisplayed = 0;
  
 	function play()
 	{
@@ -50,164 +56,196 @@ var config = {
 		var player=0;
 		if (beginGame)
 		{
+
 			database.ref().once("value", function(snapshot) {
-				if ( snapshot.val().player1.flag == 0 )
+				if ( snapshot.val().player.player1.flag == 0 )
 				{
 					$('#msg').html(" You are player1");
-					database.ref().update({
-					 	player1:{
-					 	flag:1,
-					 	score:0,
-					 	choice:""
-					 	}
+					database.ref("player/player1").update({
+					 			choice:"",
+					 			flag:1
 					 });
 					player=1;
 				}
-				if (( snapshot.val().player2.flag == 0 ) && (snapshot.val().player1.flag == 1))
+				if (( snapshot.val().player.player2.flag == 0 ) && (snapshot.val().player.player1.flag == 1))
 				{
 					$('#msg').html(" You are player2")
-					database.ref().update({
-					 	player2:{
-					 	flag:1,
-					 	score:0,
-					 	choice:""
-					 	}
+					database.ref("player/player2").update({
+					 		choice:"",
+					 		flag:1
 					 });
 					player=2;
 				}
-				if (( snapshot.val().player2.flag == 1 ) && (snapshot.val().player1.flag == 1))
+				// Tell third player to wait
+				if (( snapshot.val().player.player2.flag == 1 ) && (snapshot.val().player.player1.flag == 1))
 				{
 					$('#msg').html(" Game in Progress, please wait for your turn !!!")
 				}
 				if ( player === 1 )
 				{
-					database.ref().onDisconnect().update({
-						 	player1:{
-						 	flag:0,
-						 	score:0,
-						 	choice:""
-						 	}
+					database.ref("player/player1").onDisconnect().update({
+							 	flag:0,
+							 	choice:""
 						 });
+					database.ref("click").onDisconnect().update({
+						player1:0
+					});
 					sessionStorage.setItem('player', '1');
 				}
 				if ( player === 2 )
 				{
-					database.ref().onDisconnect().update({
-						 	player2:{
-						 	flag:0,
-						 	score:0,
-						 	choice:""
-						 	}
+					database.ref("player/player2").onDisconnect().update({
+							 	flag:0,
+							 	choice:""
 						 });
+					database.ref("click").onDisconnect().update({
+						player2:0
+					});
 					sessionStorage.setItem('player', '2');
 				}
 
 			});
+			
 		}
 	}
 
-		function rock()
-		{
+	$(".choice").on("click",function () {
 			var player = sessionStorage.getItem('player');
+
+			var choice = $(this).text();
+
 			if ( player == 1)
 			{
-				database.ref().once("value", function(snapshot) {
-					var oldflg = snapshot.val().player1.flag;
-					var oldscr = snapshot.val().player1.score;
-					database.ref().update({
-						 	player1:{
-						 	flag:oldflg,
-						 	score:oldscr,
-						 	choice:"rock"
-						 	}
-						 });
-				});
+						
+                        database.ref("player/player1").update({
+                            choice:choice
+                        });
+						$('#clicked').html("You clicked on "+ choice)
+						database.ref("click").update({
+						 	player1:1
+						});
+                
 			}
 			if ( player == 2)
 			{
-				database.ref().once("value", function(snapshot) {
-					var oldflg = snapshot.val().player2.flag;
-					var oldscr = snapshot.val().player2.score;
-					database.ref().update({
-						 	player2:{
-						 	flag:oldflg,
-						 	score:oldscr,
-						 	choice:"rock"
-						 	}
+					 
+                       database.ref("player/player2").update({
+								 	choice:choice
+							 });
+						$('#clicked').html("You clicked on "+ choice)
+						database.ref("click").update({
+							 	player2:1
 						 });
-				});
 			}
-			$('#clicked').html("You clicked on rock")
-		}
-		function paper()
-		{
-		var player = sessionStorage.getItem('player');
-			if ( player == 1)
-			{
-				database.ref().once("value", function(snapshot) {
-					var oldflg = snapshot.val().player1.flag;
-					var oldscr = snapshot.val().player1.score;
-					database.ref().update({
-						 	player1:{
-						 	flag:oldflg,
-						 	score:oldscr,
-						 	choice:"paper"
-						 	}
-						 });
-				});
-			}
-			if ( player == 2)
-			{
-				database.ref().once("value", function(snapshot) {
-					var oldflg = snapshot.val().player2.flag;
-					var oldscr = snapshot.val().player2.score;
-					database.ref().update({
-						 	player2:{
-						 	flag:oldflg,
-						 	score:oldscr,
-						 	choice:"paper"
-						 	}
-						 });
-				});
-			}
-			$('#clicked').html("You clicked on paper")
-		}
-		function scissor()
-		{
-			var player = sessionStorage.getItem('player');
-			if ( player == 1)
-			{
-				database.ref().once("value", function(snapshot) {
-					var oldflg = snapshot.val().player1.flag;
-					var oldscr = snapshot.val().player1.score;
-					database.ref().update({
-						 	player1:{
-						 	flag:oldflg,
-						 	score:oldscr,
-						 	choice:"scissor"
-						 	}
-						 });
-				});
-			}
-			if ( player == 2)
-			{
-				database.ref().once("value", function(snapshot) {
-					var oldflg = snapshot.val().player2.flag;
-					var oldscr = snapshot.val().player2.score;
-					database.ref().update({
-						 	player2:{
-						 	flag:oldflg,
-						 	score:oldscr,
-						 	choice:"scissor"
-						 	}
-						 });
-				});
-			}
-			$('#clicked').html("You clicked on scissor")
-		}
+            calculateWinner();
+			database.ref("click").on("value", function(snapshot) {
+
+                    if (( snapshot.val().player1 == 1)&&(snapshot.val().player2 == 1))
+                    {
+
+                    database.ref("click").update({
+                                player1:0,
+                                player2:0
+                         });
+                   
+                    }
+                });
+        
+			
+			
+		});
+
+		
 		function calculateWinner()
 		{
+			database.ref("player").on("value", function(snapshot) {
+				var player1Choice = snapshot.val().player1.choice;
+				var player2Choice = snapshot.val().player2.choice;
+				var player = sessionStorage.getItem('player');
+				var winner=0;
+                
+                if ( (( player1Choice == "Rock" ) && (player2Choice == "Scissor")) || ((player1Choice == "Paper")&&(player2Choice == "Rock")) || ((player1Choice == "Scissor")&&(player2Choice == "Paper")) ) 
+					{
+						winner=1;
+						if ( player == '1')
+						{
+						 	$('#result').html("Opponent choose "+ player2Choice + " You are a Winner")
+    
+						 	score = score + 1;
+						}
+						else
+						{
+							$('#result').html("Opponent choose "+ player1Choice + " You are a Loser")
+							
+						}
+					
+					}
+					if ( (( player1Choice == "Rock" ) && (player2Choice == "Paper")) || ((player1Choice == "Paper")&&(player2Choice == "Scissor")) || ((player1Choice == "Scissor")&&(player2Choice == "Rock")) )
+					{
+						winner = 2;
+						if ( player == '1')
+						{
+						 	$('#result').html("Opponent choose "+ player2Choice + " You are a Loser")
+						 	
+						}
+						else
+						{
+							$('#result').html("Opponent choose "+ player1Choice + " You are a Winner")
+							score = score + 1
+						}
+					
+					}
+					if (( player1Choice == player2Choice) && ((player2Choice != "")|| (player1Choice != "")))
+					{
+						$('#result').html("It's a tie..Choose again");
+						
+					
+					}
 
+				//update score 
+				
+					 $('#Score').html("Your score is " + score);
+                    if (( player == 1) && ( winner > 0))
+                        {
+                            database.ref("player/player1").update({
+							 	flag:0,
+							 	choice:""
+						 });
+                        }
+                    if (( player == 2) && ( winner > 0 ))
+                    {
+                        database.ref("player/player2").update({
+							 	flag:0,
+							 	choice:""
+						 });
+                    }
+			});
+		}
+
+		function resetDB()
+		{
+            if ( resultDisplayed === 1 )
+            {
+                database.ref("click").on("value", function(snapshot) {
+
+                    if (( snapshot.val().player1 == 1)&&(snapshot.val().player2 == 1))
+                    {
+
+                    database.ref("click").update({
+                                player1:0,
+                                player2:0
+                         });
+                        sessionStorage.setItem('click1', '0');
+                        sessionStorage.setItem('click2', '0');
+                    }
+                    else
+                    {
+                        sessionStorage.setItem('click1', snapshot.val().player1);
+                        sessionStorage.setItem('click2', snapshot.val().player2);
+                    }
+                });
+                resultDisplayed=0;
+            }
 		}
 </script>
 </body>
